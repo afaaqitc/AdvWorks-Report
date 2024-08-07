@@ -132,7 +132,7 @@ columnDefs=list(list(className="dt-center",targets=c(1:6)),list(visible=FALSE,ta
 
 
 items_categories_class_chart<-
-items_categories_class %>% group_by(class) %>% summarize(sales=round(sum(sales)/1000000)) %>% ggplot(aes(x="",y=sales,fill = class))+geom_bar(stat = "identity",width = 1)+coord_polar(theta = "y")+theme_void()+geom_text(aes(label = sales),color="white",size=6,fontface = "bold",position = position_stack(vjust = 0.6))+scale_fill_brewer(palette = "Set1")+labs(caption = "Total Per Millions.")+theme(plot.caption = element_text(face = "bold",hjust = ))
+items_categories_class %>% group_by(class) %>% summarize(sales=round(sum(sales)/1000000)) %>% ggplot(aes(x="",y=sales,fill = class))+geom_bar(stat = "identity",width = 1)+coord_polar(theta = "y")+theme_void()+geom_text(aes(label = sales),color="white",size=3.5,fontface = "bold",position = position_stack(vjust = 0.6))+scale_fill_brewer(palette = "Set1")+labs(caption = "Total Per Millions.")+theme(plot.caption = element_text(face = "bold",hjust = ))
 
 categories_chart<-
 od %>% group_by(category_name) %>% 
@@ -312,12 +312,102 @@ categories_chart
 # Categories_Class
 ## row{data-hight=500,.tabset}
 ### Categories_class
+
 ```{r}
 items_categories_class_dt %>% formatCurrency(columns = 5,digits = 2)
 ```
 
 ### Items_Classes
+
 ```{r}
 items_categories_class_chart
+```
+
+
+
+# Categories_Year
+## row{.tabset}
+###  TBL
+```{r}
+yr_categories_dt
+```
+
+
+### Chart
+```{r}
+ggplotly( yr_categories_chart ,width = 1000)
+```
+
+
+# Year_Month
+
+## row{.tabset}
+
+### TBL
+
+```{r}
+ymw_totals_dt
+```
+
+
+### Chart
+
+```{r fig.width=14,fig.height=5}
+ggplotly(ym_totals_chart,width = 1000)
+```
+
+# BIKES_Category
+## row{data-hight=500,.tabset}
+
+### TBL
+```{r}
+od %>% filter(category_name=="Bikes") %>% 
+group_by(subcategories) %>%
+summarize(Qty=sum(OrderQty),sales=comma(sum(subtotal)),pct=sum(subtotal)/sum(od$subtotal),Orders=n()) %>% datatable(class = "hover row=border",
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:2))))) %>% formatCurrency(columns = 3,digits = 2) %>% formatPercentage(columns = 4,digits = 2)
+```
+
+
+
+### Chart
+```{r}
+Bikes_subcategories_totals_chart
+```
+
+
+
+# Forecast
+
+## row{.tabset}
+### Week_TBL
+
+```{r}
+wfd %>% rename_with(.cols =c(1:6) ,.fn = toupper) %>% datatable(class="hover row-border", 
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:6))))) %>% formatCurrency(columns = c(2:6),digits = 2)
+```
+
+
+### Week_Chart
+
+```{r fig.width=12,fig.height=5}
+ autoplot(mwf)
+
+```
+
+
+### Year_TBL
+```{r}
+
+as.data.frame(mf) %>%  rename_with(.cols =c(1:5) ,.fn = toupper) %>% datatable(class="hover row-border", 
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:5))))) %>% formatCurrency(columns =c(1:5),digits = 2)
+
+```
+
+### Year_Chart
+```{r fig.width=13,fig.height=5}
+autoplot(mf)
 ```
 
