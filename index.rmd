@@ -193,6 +193,15 @@ position = position_stack(vjust = 0.7),size = 5,color="white")+
 labs(caption = "~ Sales Per Milions.")+
 theme(plot.caption = element_text(face = "bold",size = 9,color="black",hjust = 0))
 
+
+Bikes_totals_dt<-
+od %>% filter(category_name=="Bikes") %>% 
+group_by(subcategories) %>%
+summarize(Qty=sum(OrderQty),sales=comma(sum(subtotal)),pct=sum(subtotal)/sum(od$subtotal),Orders=n()) %>% datatable(class = "hover row=border",
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:2))))) %>% formatCurrency(columns = 3,digits = 2) %>% formatPercentage(columns = 4,digits = 2)
+
+
 #------------------------------------------------------------------------------
 countries_totals<-
 oh %>% group_by(countries) %>% 
@@ -218,7 +227,7 @@ axis.text.x = element_text(face = "bold",size=9,colour = "black"),
 axis.text.y = element_text(face = "bold",size=9,colour = "black"))+coord_flip()
 
 #------------------------------------------------------------------------------
-#Month 
+#year 
 
 mn<-
 oh %>% group_by(ym) %>% summarize(sales=sum(subtotal))
@@ -241,6 +250,13 @@ mutate(month_year=paste(format(ym,"%b"),format(ym,"%Y"))) %>%
 select(month_year,sales) %>% inner_join(mfd,by="month_year")
 
 
+mf_dt<-
+as.data.frame(mf) %>%  rename_with(.cols =c(1:5) ,.fn = toupper) %>% datatable(class="hover row-border", 
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:5))))) %>% formatCurrency(columns =c(1:5),digits = 2)
+
+
+
 #Weeks
 mw<-oh %>% group_by(yw) %>% summarize(sales=sum(subtotal))
 
@@ -251,6 +267,9 @@ mwa<-auto.arima(mws)
 mwf<-forecast(mwa,h =47 )
 
 
+
+
+
 wfd<-data.frame(mwf)
 wfd<-wfd %>% mutate(week_month=rownames(wfd))
 
@@ -258,6 +277,10 @@ rownames(wfd)<-NULL
 
 wfd<-wfd[,c(6,1:5)]
 
+wfd_dt<-
+wfd %>% rename_with(.cols =c(1:6) ,.fn = toupper) %>% datatable(class="hover row-border", 
+extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
+columnDefs=list(list(className="dt-center",targets=c(1:6))))) %>% formatCurrency(columns = c(2:6),digits = 2)
 
 ```
 
@@ -361,11 +384,11 @@ ggplotly(ym_totals_chart,width = 1000)
 
 ### TBL
 ```{r}
-od %>% filter(category_name=="Bikes") %>% 
-group_by(subcategories) %>%
-summarize(Qty=sum(OrderQty),sales=comma(sum(subtotal)),pct=sum(subtotal)/sum(od$subtotal),Orders=n()) %>% datatable(class = "hover row=border",
-extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
-columnDefs=list(list(className="dt-center",targets=c(1:2))))) %>% formatCurrency(columns = 3,digits = 2) %>% formatPercentage(columns = 4,digits = 2)
+
+
+Bikes_totals_dt
+
+
 ```
 
 
@@ -383,9 +406,10 @@ Bikes_subcategories_totals_chart
 ### Week_TBL
 
 ```{r}
-wfd %>% rename_with(.cols =c(1:6) ,.fn = toupper) %>% datatable(class="hover row-border", 
-extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
-columnDefs=list(list(className="dt-center",targets=c(1:6))))) %>% formatCurrency(columns = c(2:6),digits = 2)
+
+
+wfd_dt
+
 ```
 
 
@@ -399,10 +423,7 @@ columnDefs=list(list(className="dt-center",targets=c(1:6))))) %>% formatCurrency
 
 ### Year_TBL
 ```{r}
-
-as.data.frame(mf) %>%  rename_with(.cols =c(1:5) ,.fn = toupper) %>% datatable(class="hover row-border", 
-extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
-columnDefs=list(list(className="dt-center",targets=c(1:5))))) %>% formatCurrency(columns =c(1:5),digits = 2)
+mf_dt
 
 ```
 
