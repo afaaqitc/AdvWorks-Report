@@ -28,6 +28,7 @@ library(tseries)
 library(forecast)
 library(fpp2)
 library(plotly)
+library(tibble)
 
 setwd("~/Data/Learn/R_Projects/advworks_collect/")
 
@@ -226,61 +227,68 @@ theme(plot.caption = element_text(face = "bold.italic",size = 8,hjust = 0,),
 axis.text.x = element_text(face = "bold",size=9,colour = "black"),
 axis.text.y = element_text(face = "bold",size=9,colour = "black"))+coord_flip()
 
-#------------------------------------------------------------------------------
-#year 
+#------------------------------------------------------------
 
-mn<-
-oh %>% group_by(ym) %>% summarize(sales=sum(subtotal))
+# Year
+# Last 6 Months:
 
-ms<-ts(mn$sales,start =c(2011,1) ,end =c(2013,6) ,frequency = 12)
+mn<-oh %>% group_by(ym) %>% summarize(sales=sum(subtotal))
 
-ma<-auto.arima(ms)
-mf<-forecast(ma,h = 13)
+mn_lts<-ts(mn$sales,start = c(2011,6),end =c(2013,12) ,frequency = 12)
 
-mfd<-data.frame(mf)
-mfd<-mfd %>% mutate(month_year=rownames(mfd))
+mn_ets<-ets(mn_lts)
+mn_fets<-forecast(mn_ets,h = 6)
 
-rownames(mfd)<-NULL
+detect_last<-
+cbind(mn[c(32:37),] %>% rename(date=ym)
+,rownames_to_column(data.frame(mn_fets))) %>% 
+mutate(Low=(Lo.80+Lo.95)/2,Hi=(Hi.95+Hi.80)/2)%>% 
+select(date,sales,Point.Forecast,Hi,Low)
 
-mfd<-mfd[,c(6,1:5)]
-
-
-mfd<-mn[c(27:38),] %>%
-mutate(month_year=paste(format(ym,"%b"),format(ym,"%Y"))) %>%
-select(month_year,sales) %>% inner_join(mfd,by="month_year")
-
-
-mf_dt<-
-as.data.frame(mf) %>%  rename_with(.cols =c(1:5) ,.fn = toupper) %>% datatable(class="hover row-border", 
-extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
-columnDefs=list(list(className="dt-center",targets=c(1:5))))) %>% formatCurrency(columns =c(1:5),digits = 2)
+detect_last_dt<-
+detect_last%>% datatable(class="hover row-border",extensions = list(Buttons=TRUE),
+options = list(dom="Bfrtip",buttons=c("csv","pdf","excel"),
+columnDefs=list(list(className="dt-center",targets=c(1:5))))) %>% 
+formatCurrency(columns = c(2:5),digits = 2)
 
 
+detect_last_ets_chart<-
+detect_last %>% pivot_longer(!date,names_to ="cat" ,values_to = "values") %>% filter(cat !="Hi")%>%  mutate(date=as.POSIXct(date)) %>% ggplot(aes(x=date,y=values,color=cat,group=cat))+geom_line(size=0.8)+theme_bw()+labs(x="",y="")+
+scale_x_datetime(date_breaks = "month",date_labels = "%b-%y")+theme(axis.text.x = element_text(color="black",face = "bold",size = 9),axis.text.y = element_text(color="black",face = "bold",size = 9))
 
-#Weeks
-mw<-oh %>% group_by(yw) %>% summarize(sales=sum(subtotal))
+mn_ar<-auto.arima(mn_lts)
+mn_for<-forecast(mn_ar,h = 6)
 
-mws<-ts(mw$sales,start =c(2011,5) ,end =c(2013,7),frequency = 52 )
+# Real
 
-mwa<-auto.arima(mws)
+mn_rts<-ts(mn$sales,c(2011,6),frequency = 12)
+mn_rets<-ets(mn_rts)
+mn_rfor<-forecast(mn_rets,h = 12)
 
-mwf<-forecast(mwa,h =47 )
+Forecast_model<-
+cbind(
+data.frame(date=seq(as.Date("2014-08-01"),by="month",len=12)
+,
+rownames_to_column(data.frame(mn_rfor))%>%
+rename(Month_Year=rowname) %>% 
+mutate(Low=(Lo.80+Lo.95)/2,Hi=(Hi.95+Hi.80)/2) %>% 
+select(Point.Forecast,Hi,Low)))
+
+Forecast_model_dt<-
+Forecast_model %>% datatable(class="hover row-border",extensions = list(Buttons=TRUE),
+options = list(dom="Bfrtip",buttons=c("csv","pdf","excel"),
+columnDefs=list(list(className="dt-center",targets=c(1:4))))) %>% 
+formatCurrency(columns = c(2:4),digits = 2)
 
 
+Forecast_model_chart<-
+cbind(
+data.frame(date=seq(as.Date("2014-08-01"),by="month",len=12)
+,Forecast_model[,c("Point.Forecast","Hi","Low")])) %>% mutate(date=as.POSIXct(date)) %>% 
+pivot_longer(!date,names_to ="cat" ,values_to = "values") %>%
+ggplot(aes(x=date,y=values,color=cat,group=cat))+geom_line(size=0.8)+theme_bw()+labs(x="",y="")+
+scale_x_datetime(date_breaks ="month" ,date_labels = "%b-%Y")
 
-
-
-wfd<-data.frame(mwf)
-wfd<-wfd %>% mutate(week_month=rownames(wfd))
-
-rownames(wfd)<-NULL
-
-wfd<-wfd[,c(6,1:5)]
-
-wfd_dt<-
-wfd %>% rename_with(.cols =c(1:6) ,.fn = toupper) %>% datatable(class="hover row-border", 
-extensions = list(Buttons=TRUE),options = list(dom="Bfrtip",buttons=c("csv","excel","pdf"),
-columnDefs=list(list(className="dt-center",targets=c(1:6))))) %>% formatCurrency(columns = c(2:6),digits = 2)
 
 ```
 
@@ -401,34 +409,25 @@ Bikes_subcategories_totals_chart
 
 
 # Forecast
-
-## row{.tabset}
-### Week_TBL
-
+## {.tabset}
+### Last 6 Months
 ```{r}
-
-
-wfd_dt
-
+detect_last_dt
 ```
 
-
-### Week_Chart
-
-```{r fig.width=12,fig.height=5}
- autoplot(mwf)
-
-```
-
-
-### Year_TBL
+### Last Chart
 ```{r}
-mf_dt
-
+ggplotly(detect_last_ets_chart)
 ```
 
-### Year_Chart
-```{r fig.width=13,fig.height=5}
-autoplot(mf)
+### Forecast Next Year
+```{r}
+Forecast_model_dt
+```
+
+
+### Chart Next Year 
+```{r}
+ggplotly(Forecast_model_chart,width = 800)
 ```
 
